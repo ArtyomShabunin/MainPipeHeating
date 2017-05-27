@@ -68,30 +68,56 @@ package MainPipeHeating
       Line(points = {{0, 70}, {0, 54}}, color = {191, 0, 0}));
   end HeatingPipeTest_1;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  model HeatingPipeTest_2
+    replaceable package Medium = Modelica.Media.Water.StandardWater constrainedby Modelica.Media.Interfaces.PartialTwoPhaseMedium;
+    //Характеристики металла трубопровода
+    parameter Modelica.SIunits.SpecificHeatCapacity Cp = 470 "Удельная теплоемкость стали(Дж/кг/К)";
+    parameter Modelica.SIunits.Density rho = 7800 "Плотность стали (кг/м3)";
+    //Геометрические характеристики трубопроводов
+    parameter Modelica.SIunits.Diameter Dout = 0.273 "Наружный диаметр основного трубопровода (м)";
+    parameter Modelica.SIunits.Thickness delta = 0.026 "Толщина стенки основного трубопровода (м)";
+    //Параметры участков трубопроводов
+    //Участок №1
+    parameter Modelica.SIunits.Length Lpipe1 = 15 "Длина первого участка трубопровода (м)";
+    parameter Modelica.SIunits.Area Cpipe1 = Cp * rho * Modelica.Constants.pi * (Dout ^ 2 - (Dout - 2 * delta) ^ 2) * Lpipe1 "Теплоемкость первого участка трубопровода (Дж/К)";
+    //Участок №2
+    parameter Modelica.SIunits.Length Lpipe2 = 8 "Длина второго участка трубопровода (м)";
+    parameter Modelica.SIunits.Area Cpipe2 = Cp * rho * Modelica.Constants.pi * (Dout ^ 2 - (Dout - 2 * delta) ^ 2) * Lpipe2 "Теплоемкость первого участка трубопровода (Дж/К)";  
+    //Номинальные параметры пара перед БРОУ
+    parameter Modelica.SIunits.Pressure Pnom = 8e6 "Номинальное давление перед ПТ (Па)";
+    parameter Modelica.SIunits.Temperature Tnom = 540 + 273.13 "Номинальная температура пара перед ПТ (К)";
+    parameter Modelica.SIunits.MassFlowRate Dnom = 113.8 / 3.6 "Номинальная паропроизводительность (кг/с)";
+    //Параметры при прогреве
+    parameter Modelica.SIunits.Temperature Theat = 300 + 273.15 "Температура греющего пара (К)";
+    parameter Modelica.SIunits.SpecificEnthalpy hheat = Medium.specificEnthalpy_pT(pheat, Theat) "Значение энтальпии входного потока при прогреве";  
+    parameter Modelica.SIunits.Pressure pheat = 30e5 "Давление в трубопроводе при прогреве";
+    parameter Modelica.SIunits.MassFlowRate Dheat = 0.5 / 3.6 "Расход греющего пара (кг/с)";
+    parameter Modelica.SIunits.Temperature Tinit = Medium.saturationTemperature(pheat) "Исходная температура металла паропровода (К)";
+    parameter Modelica.SIunits.SpecificEnthalpy hinit = Medium.dewEnthalpy(Medium.setSat_p(pheat)) "Начальное значение энтальпии входного потока";
+    //Модели
+    inner Modelica.Fluid.System system annotation(
+      Placement(visible = true, transformation(origin = {90, 90}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Blocks.Sources.Ramp ramp1(duration = 3, height = hheat - hinit, offset = hinit, startTime = 10)  annotation(
+      Placement(visible = true, transformation(origin = {-90, 50}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Fluid.Sources.MassFlowSource_h inletFlow(redeclare package Medium = Medium, m_flow = Dheat, nPorts = 1, use_h_in = true)  annotation(
+      Placement(visible = true, transformation(origin = {-50, 50}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Fluid.Sources.FixedBoundary outletFlow(redeclare package Medium = Medium, nPorts = 1, p = pheat)  annotation(
+      Placement(visible = true, transformation(origin = {50, 50}, extent = {{10, -10}, {-10, 10}}, rotation = 0)));
+  TPPSim.Pipes.SteamPipe pipe1(redeclare package Medium_F = Medium, Din = Dout - 2 * delta, Lpipe = Lpipe1, delta = delta, seth_in = hinit, seth_out = hinit)  annotation(
+      Placement(visible = true, transformation(origin = {-16, 50}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  TPPSim.Pipes.SteamPipe pipe2(redeclare package Medium_F = Medium, Din = Dout - 2 * delta, Lpipe = Lpipe1, delta = delta, seth_in = hinit, seth_out = hinit) annotation(
+      Placement(visible = true, transformation(origin = {18, 50}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  equation
+    connect(pipe2.waterOut, outletFlow.ports[1]) annotation(
+      Line(points = {{30, 50}, {40, 50}, {40, 50}, {40, 50}}, color = {0, 127, 255}));
+    connect(pipe1.waterOut, pipe2.waterIn) annotation(
+      Line(points = {{-4, 50}, {6, 50}, {6, 50}, {6, 50}}, color = {0, 127, 255}));
+    connect(inletFlow.ports[1], pipe1.waterIn) annotation(
+      Line(points = {{-40, 50}, {-28, 50}}, color = {0, 127, 255}));
+    connect(ramp1.y, inletFlow.h_in) annotation(
+      Line(points = {{-78, 50}, {-64, 50}, {-64, 54}, {-62, 54}}, color = {0, 0, 127}));
+  
+  end HeatingPipeTest_2;
 
 
 
